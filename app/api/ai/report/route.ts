@@ -374,6 +374,8 @@ If the research data contains a specific number, USE IT. Never round or generali
 === END DATA-RICHNESS MANDATE ===`
 }
 
+export const maxDuration = 60
+
 export async function POST(request: Request) {
   const session = await getSession()
   if (!session) {
