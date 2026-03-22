@@ -1,6 +1,8 @@
 import { tavily } from "@tavily/core"
 
-const client = tavily({ apiKey: process.env.TAVILY_API_KEY || "" })
+function getClient() {
+  return tavily({ apiKey: process.env.TAVILY_API_KEY || "" })
+}
 
 export interface MarketResearchData {
   marketSize: string | null
@@ -58,7 +60,7 @@ export async function researchMarket(topic: string): Promise<MarketResearchData>
 
     const responses = await Promise.all(
       queries.map((q) =>
-        client.search(q, {
+        getClient().search(q, {
           maxResults: 7,
           searchDepth: "advanced",
           includeAnswer: true,
