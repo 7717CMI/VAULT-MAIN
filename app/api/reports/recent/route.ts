@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { query } from "@/lib/db"
+import { getAvailablePdfKeywords } from "@/lib/s3"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -26,22 +27,33 @@ export async function GET(request: Request) {
       paramIndex++
     }
 
-    const [countRes, result] = await Promise.all([
-      query(`SELECT COUNT(*) as total FROM cmi_reports WHERE ${whereClause}`, params),
-      query(
-        `SELECT newsid, keyword, catid, forcastyear, createddate, reportstatus
-         FROM cmi_reports
-         WHERE ${whereClause}
-         ORDER BY createddate DESC
-         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-        [...params, limit, offset]
-      ),
-    ])
+    // Get available PDF keywords from S3
+    let pdfKeywords: Set<string> = new Set()
+    try {
+      pdfKeywords = await getAvailablePdfKeywords()
+    } catch {
+      // If S3 fails, show all reports
+    }
 
-    const total = Number(countRes.rows[0]?.total || 0)
+    // Fetch all matching reports, then filter by PDF availability
+    const result = await query(
+      `SELECT newsid, keyword, catid, forcastyear, createddate, reportstatus
+       FROM cmi_reports
+       WHERE ${whereClause}
+       ORDER BY createddate DESC`,
+      params
+    )
+
+    let filteredRows = result.rows
+    if (pdfKeywords.size > 0) {
+      filteredRows = filteredRows.filter((r: { keyword: string }) => pdfKeywords.has(r.keyword))
+    }
+
+    const total = filteredRows.length
+    const paginatedRows = filteredRows.slice(offset, offset + limit)
 
     return NextResponse.json({
-      reports: result.rows,
+      reports: paginatedRows,
       total,
       page,
       limit,

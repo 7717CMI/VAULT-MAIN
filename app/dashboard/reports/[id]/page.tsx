@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Eye, BarChart3, Building2, FileText, Send, CheckCircle, ShieldCheck, Users, Timer, Target, Award, BookOpen, Quote } from "lucide-react"
+import { ArrowLeft, Eye, BarChart3, Building2, FileText, ShieldCheck, Users, Timer, Target, Award, BookOpen, Quote } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -40,10 +40,6 @@ export default function ReportDetailPage() {
   const [report, setReport] = useState<ReportData | null>(null)
   const [sections, setSections] = useState<Section[]>([])
   const [loading, setLoading] = useState(true)
-  const [hasPdf, setHasPdf] = useState(false)
-  const [checkingPdf, setCheckingPdf] = useState(true)
-  const [requested, setRequested] = useState(false)
-  const [requesting, setRequesting] = useState(false)
   const [latestReports, setLatestReports] = useState<{ newsid: number; keyword: string; createddate: string }[]>([])
 
   useEffect(() => {
@@ -63,19 +59,6 @@ export default function ReportDetailPage() {
       }
     }
 
-    async function checkPdf() {
-      setCheckingPdf(true)
-      try {
-        const res = await fetch(`/api/reports/${params.id}/view`)
-        const ct = res.headers.get("content-type") || ""
-        setHasPdf(ct.includes("application/pdf"))
-      } catch {
-        setHasPdf(false)
-      } finally {
-        setCheckingPdf(false)
-      }
-    }
-
     async function fetchLatest() {
       try {
         const res = await fetch("/api/reports/recent?limit=6")
@@ -87,7 +70,6 @@ export default function ReportDetailPage() {
     }
 
     fetchReport()
-    checkPdf()
     fetchLatest()
   }, [params.id])
 
@@ -245,46 +227,15 @@ export default function ReportDetailPage() {
 
         {/* Action buttons */}
         <div className="mt-5">
-          {!checkingPdf && hasPdf && (
+          {report.reportstatus === 1 && (
             <Button
               size="lg"
               className="gap-2"
               onClick={() => router.push(`/dashboard/reports/${report.newsid}/view`)}
             >
               <Eye className="size-4" />
-              View Report PDF
+              View Full Report
             </Button>
-          )}
-          {!checkingPdf && !hasPdf && !requested && (
-            <Button
-              size="lg"
-              className="gap-2"
-              disabled={requesting}
-              onClick={() => {
-                setRequesting(true)
-                const stored = JSON.parse(localStorage.getItem("requestedReports") || "[]")
-                const already = stored.some((r: { reptid: number }) => r.reptid === report.newsid)
-                if (!already) {
-                  stored.push({
-                    reptid: report.newsid,
-                    reptitle: report.keyword,
-                    downdate: new Date().toLocaleString(),
-                  })
-                  localStorage.setItem("requestedReports", JSON.stringify(stored))
-                }
-                setRequested(true)
-                setRequesting(false)
-              }}
-            >
-              <Send className="size-4" />
-              {requesting ? "Sending..." : "Request for Report"}
-            </Button>
-          )}
-          {!checkingPdf && !hasPdf && requested && (
-            <div className="inline-flex items-center gap-2 text-sm font-medium text-green-600">
-              <CheckCircle className="size-5" />
-              Request Submitted
-            </div>
           )}
         </div>
       </div>
