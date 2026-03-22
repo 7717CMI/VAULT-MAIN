@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { getSession } from "@/lib/auth"
 
+export const maxDuration = 120
+
 const INSIGHT_PROMPTS = [
   {
     title: "Growth Factors",

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { getSession } from "@/lib/auth"
 
+export const maxDuration = 120
+
 export async function POST(request: Request) {
   const session = await getSession()
   if (!session) {
