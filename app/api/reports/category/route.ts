@@ -20,14 +20,12 @@ export async function GET(request: Request) {
     }
 
     // Trending = most recent published reports (reportstatus = 1)
-    // Fetch more than needed so we can filter by PDF availability
-    const trendingFetchLimit = pdfKeywords.size > 0 ? limit * 5 : limit
+    // Fetch all published reports so we can filter by PDF availability
     const trendingRes = await query(
       `SELECT newsid, keyword, catid, forcastyear, createddate, reportstatus
        FROM cmi_reports
        WHERE isactive = 1 AND reportstatus = 1 ${catFilter}
-       ORDER BY createddate DESC
-       LIMIT ${trendingFetchLimit}`,
+       ORDER BY createddate DESC`,
       params
     )
 
@@ -35,8 +33,8 @@ export async function GET(request: Request) {
     if (pdfKeywords.size > 0) {
       trendingRes.rows = trendingRes.rows
         .filter((r: { keyword: string }) => pdfKeywords.has(r.keyword))
-        .slice(0, limit)
     }
+    trendingRes.rows = trendingRes.rows.slice(0, limit)
 
     // Upcoming = reportstatus 0, most recent
     const upcomingRes = await query(
