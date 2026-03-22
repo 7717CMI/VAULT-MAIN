@@ -322,12 +322,17 @@ export function AIInsights({ query }: AIInsightsProps) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ query }),
         })
-        if (!res.ok) throw new Error("Failed to load report")
+        if (!res.ok) {
+          const errBody = await res.text().catch(() => "")
+          throw new Error(`Failed (${res.status}): ${errBody}`)
+        }
         const data = await res.json()
         setReport(data.report || null)
         setChartData(data.chartData || null)
-      } catch {
-        setError("Unable to load report. Please try again.")
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown error"
+        console.error("[AI Report] Error:", msg)
+        setError(`Unable to load report: ${msg}`)
       } finally {
         setLoading(false)
       }
